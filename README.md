@@ -1,17 +1,21 @@
 # Arduino Zombie Game
 
-以 Arduino 與 ILI9341 TFT 彩色螢幕實作的 2D 動態遊戲原型。專案將角色圖像以 `PROGMEM` 常數陣列儲存在 Flash，避免大量圖片資料佔用有限的 SRAM，再透過 SPI 將畫面繪製到 TFT。主要程式為 `zombie_loli.ino`。
+以 Arduino Mega、ILI9341 TFT 螢幕、三顆按鍵與蜂鳴器製作的即時反應遊戲。玩家在 30 秒內依螢幕上角色所在的三條軌道按下對應按鍵；按對時取得分數並推進下一個隨機狀態，按錯則播放角色跳躍動畫。此專案以單一 Arduino 程式整合顯示、按鍵中斷、遊戲狀態與時間控制。
 
-## 技術實作
+## 程式架構與技術重點
 
-- **顯示驅動**：使用 `Adafruit_GFX` 與 `Adafruit_ILI9341` 函式庫，透過 SPI 控制 ILI9341 顯示器；程式明確定義 CLK、MISO、MOSI、DC、CS 與 RST 腳位。
-- **圖像資料**：以單色 bitmap 陣列儲存角色素材，執行時由 Arduino 直接讀取 Flash 並渲染，適合記憶體受限的嵌入式環境。
-- **遊戲畫面**：以逐幀更新方式處理畫面，將角色、背景與狀態呈現在 TFT 螢幕上，練習嵌入式圖形輸出與即時互動程式設計。
+- **SPI 圖形介面**：以 `Adafruit_GFX`、`Adafruit_ILI9341` 驅動 320×240 TFT，並明確配置 CLK、MISO、MOSI、DC、CS、RST 腳位。
+- **嵌入式資源管理**：80×80 的角色 bitmap 以 `PROGMEM` 存放在 Flash；避免圖片資料耗用 SRAM，適合記憶體有限的 Arduino 環境。
+- **三軌狀態機**：使用 `states[4][3]` 保存四列、三軌的遊戲盤面。答對後將狀態由後往前搬移，再以 `random()` 於最前列產生新的目標；最末列決定目前正確軌道。
+- **中斷與去彈跳**：三個按鍵分別接至外部中斷，ISR 僅記錄按鍵狀態，主迴圈再透過 `debounce()` 進行穩定判斷，避免按鍵雜訊直接破壞遊戲流程。
+- **非阻塞計時概念**：以 `millis()` 計算遊戲起始時間與每秒更新的倒數顯示，而非把主遊戲時間建立在長時間 `delay()` 上。
+- **視覺回饋**：分數每累積十點會切換角色顏色；錯誤輸入呼叫 `NoteJump()` 繪製多段跳躍路徑；時間結束後顯示閃爍結算畫面，按 A 可重新開始。
 
-## 使用方式
+## 硬體與函式庫
 
-1. 在 Arduino IDE 安裝 `Adafruit GFX`、`Adafruit ILI9341` 函式庫。
-2. 依程式中的腳位定義接上 ILI9341 TFT 螢幕。
-3. 開啟並上傳 `zombie_loli.ino`。
+- Arduino Mega（程式使用的腳位含 2、3、4、6、8–13）
+- ILI9341 TFT 顯示器
+- 三顆按鍵、蜂鳴器
+- `Adafruit GFX`、`Adafruit ILI9341`
 
-本專案著重 Arduino 圖形顯示、Flash 記憶體運用與互動式遊戲邏輯的練習。
+主要程式：[`zombie_loli.ino`](./zombie_loli.ino)
